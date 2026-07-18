@@ -55,20 +55,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TooltipProvider>
-            <SidebarProvider
-              style={
-                {
-                  "--sidebar-width": "20rem",
-                  "--sidebar-width-icon": "3rem",
-                } as React.CSSProperties
-              }
-            >
-              <AppSidebar />
-
-              <SidebarInset> {children}</SidebarInset>
-            </SidebarProvider>
-          </TooltipProvider>
+          <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
       </body>
     </html>
