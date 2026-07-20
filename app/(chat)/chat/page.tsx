@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { useCreateThread } from "@/hooks/use-thread";
+import { useRouter } from "next/navigation";
 
 const suggestions = [
   {
@@ -30,6 +32,8 @@ const suggestions = [
 export default function ChatPage() {
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const createdThread = useCreateThread();
+  const router = useRouter();
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -40,10 +44,16 @@ export default function ChatPage() {
     textarea.style.height = `${Math.min(textarea.scrollHeight, 220)}px`;
   }, [message]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!message.trim()) return;
 
     console.log(message);
+    const connection_id = localStorage.getItem("connection_id")!;
+    const data = await createdThread.mutateAsync({
+      connection_id,
+      title: message,
+    });
+    router.push(`/thread/${data?.id}`);
 
     setMessage("");
 

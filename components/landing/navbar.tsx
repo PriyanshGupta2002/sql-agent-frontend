@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
 import {
   RiDatabase2Line,
   RiGithubLine,
@@ -24,7 +25,6 @@ export function Navbar() {
 
           <div>
             <p className="text-sm font-semibold leading-none">SQL AI</p>
-
             <p className="text-xs text-muted-foreground">Database Assistant</p>
           </div>
         </Link>
@@ -62,11 +62,25 @@ export function Navbar() {
           </Link>
         </nav>
 
-        {/* CTA */}
-        <Button className="rounded-full">
-          Get Started
-          <RiArrowRightUpLine className="ml-2" size={18} />
-        </Button>
+        <div className="flex items-center gap-3">
+          <Show when="signed-out">
+            <SignInButton>
+              <Button variant="ghost" className="rounded-full">
+                Sign In
+              </Button>
+            </SignInButton>
+            <SignUpButton>
+              <Button className="rounded-full">
+                Get Started
+                <RiArrowRightUpLine className="ml-2" size={18} />
+              </Button>
+            </SignUpButton>
+          </Show>
+
+          <Show when="signed-in">
+            <UserButton />
+          </Show>
+        </div>
       </div>
     </header>
   );

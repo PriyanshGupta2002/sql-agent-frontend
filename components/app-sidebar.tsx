@@ -2,7 +2,6 @@
 
 import * as React from "react";
 
-import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
@@ -12,22 +11,12 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import {
-  RiGalleryLine,
-  RiPulseLine,
-  RiCommandLine,
-  RiTerminalBoxLine,
-  RiRobotLine,
-  RiBookOpenLine,
-  RiSettingsLine,
-  RiCropLine,
-  RiPieChartLine,
-  RiMapLine,
-} from "@remixicon/react";
+
 import AgentSwitcher from "./agent-switcher";
 import NavConnections from "./nav-connections";
-import { connectionsList, threadsList } from "@/lib/utils";
 import NavThreads from "./nav-threads";
+import { useListConnections } from "@/hooks/use-connection";
+import { useGetThreads } from "@/hooks/use-thread";
 
 // This is sample data.
 const data = {
@@ -36,127 +25,6 @@ const data = {
     email: "m@example.com",
     avatar: "/avatars/shadcn.jpg",
   },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: <RiGalleryLine />,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: <RiPulseLine />,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: <RiCommandLine />,
-      plan: "Free",
-    },
-  ],
-  navMain: [
-    {
-      title: "Playground",
-      url: "#",
-      icon: <RiTerminalBoxLine />,
-      isActive: true,
-      items: [
-        {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Models",
-      url: "#",
-      icon: <RiRobotLine />,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: <RiBookOpenLine />,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: <RiSettingsLine />,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: <RiCropLine />,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: <RiPieChartLine />,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: <RiMapLine />,
-    },
-  ],
 };
 const agentOptions = [
   {
@@ -171,6 +39,16 @@ const agentOptions = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [agent, setAgent] = React.useState<string>("normal_agent");
+  const [connectionId, setConnectionId] = React.useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return localStorage.getItem("connection_id");
+  });
+  const { data: connectionsList } = useListConnections();
+
+  const { data: threadsList } = useGetThreads(connectionId ?? "");
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -182,11 +60,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
       </SidebarHeader>
       <SidebarContent>
-        <NavConnections connections={connectionsList} />
+        <NavConnections
+          connections={connectionsList}
+          activeConnection={connectionId || ""}
+          setActiveConnection={setConnectionId}
+        />
         <NavThreads threads={threadsList} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

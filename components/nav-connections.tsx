@@ -1,4 +1,5 @@
-import React, { FC, useState } from "react";
+"use client";
+import React, { FC, useEffect, useState } from "react";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -6,9 +7,6 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 
 import {
@@ -32,7 +30,6 @@ import {
 import {
   RiAddLine,
   RiDeleteBinLine,
-  RiFolderLine,
   RiMoreLine,
   RiPencilLine,
 } from "@remixicon/react";
@@ -48,9 +45,11 @@ import {
 } from "./ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "./ui/badge";
+import { useCreateConnection } from "@/hooks/use-connection";
+import { usePathname, useRouter } from "next/navigation";
 
 const DB_TYPES = [
-  { value: "postgres", label: "PostgreSQL" },
+  { value: "postgresql", label: "PostgreSQL" },
   { value: "mysql", label: "MySQL" },
   { value: "sqlite", label: "SQLite" },
   { value: "mssql", label: "SQL Server" },
@@ -59,17 +58,37 @@ const DB_TYPES = [
 ];
 interface NavConnectionsProps {
   connections: Connections[];
+  activeConnection: string;
+  setActiveConnection: (connection: string) => void;
 }
 
-const NavConnections: FC<NavConnectionsProps> = ({ connections }) => {
+const NavConnections: FC<NavConnectionsProps> = ({
+  connections,
+  activeConnection,
+  setActiveConnection,
+}) => {
   const [alias, setAlias] = useState("");
   const [dbType, setDbType] = useState("");
   const [connectionString, setConnectionString] = useState("");
-  const [activeConnection, setActiveConnection] = useState("");
 
-  const handleConnect = () => {
+  const [open, setOpen] = useState<boolean>(false);
+
+  const createConnection = useCreateConnection();
+  const pathname = usePathname();
+  const router = useRouter();
+  const handleConnect = async () => {
     // TODO: wire up to your connect mutation/API call
-    console.log({ alias, dbType, connectionString });
+    const data = await createConnection.mutateAsync({
+      alias,
+      color,
+      database_type: dbType,
+      connection_string: connectionString,
+    });
+    setOpen(false);
+    setAlias("");
+    setConnectionString("");
+    setActiveConnection(data.id);
+    localStorage.setItem("connection_id", data.id);
   };
   const [color, setColor] = useState("#3b82f6");
   const isMobile = useIsMobile();
@@ -78,7 +97,7 @@ const NavConnections: FC<NavConnectionsProps> = ({ connections }) => {
     <SidebarGroup>
       <SidebarGroupLabel>Database Connections</SidebarGroupLabel>
 
-      <Dialog>
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger
           render={
             <SidebarMenuButton
@@ -182,11 +201,18 @@ const NavConnections: FC<NavConnectionsProps> = ({ connections }) => {
         </DialogContent>
       </Dialog>
       <SidebarMenu className="group-data-[collapsible=icon]:hidden">
-        {connections.map((connection) => (
-          <SidebarMenuItem key={connection.dbString}>
+        {connections?.map((connection) => (
+          <SidebarMenuItem key={connection.id}>
             <SidebarMenuButton
-              isActive={connection.dbString === activeConnection}
-              onClick={() => setActiveConnection(connection.dbString)}
+              isActive={connection.id === activeConnection}
+              onClick={() => {
+                setActiveConnection(connection?.id || "");
+                localStorage.setItem("connection_id", connection?.id || "");
+
+                if (pathname.startsWith("/thread")) {
+                  router.push("/chat");
+                }
+              }}
             >
               <div
                 className="w-3 h-3 rounded-full"
@@ -194,8 +220,8 @@ const NavConnections: FC<NavConnectionsProps> = ({ connections }) => {
                   backgroundColor: `${connection.color}`,
                 }}
               />
-              {connection.aliasName}
-              {activeConnection === connection.dbString && (
+              {connection.alias}
+              {activeConnection === connection.id && (
                 <Badge variant={"default"}>Active</Badge>
               )}
             </SidebarMenuButton>

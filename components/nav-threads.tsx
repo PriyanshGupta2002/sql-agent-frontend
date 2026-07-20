@@ -17,6 +17,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { formatCreatedAt } from "@/lib/utils";
 
 import {
   RiDeleteBinLine,
@@ -24,30 +25,35 @@ import {
   RiMoreLine,
   RiChat3Line,
 } from "@remixicon/react";
+import { useRouter } from "next/navigation";
 
 interface NavThreadsProps {
-  threads: Thread[];
+  threads: ThreadResponse[];
 }
 
 export default function NavThreads({ threads }: NavThreadsProps) {
   const { isMobile } = useSidebar();
+  const router = useRouter();
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>Threads</SidebarGroupLabel>
 
       <SidebarMenu className="space-y-3">
-        {threads.map((thread) => (
-          <SidebarMenuItem key={thread.id}>
+        {threads?.map((thread) => (
+          <SidebarMenuItem
+            key={thread.id}
+            onClick={() => router.push(`/thread/${thread.id}`)}
+          >
             <SidebarMenuButton>
               <div className="flex items-center gap-2">
                 <RiChat3Line />
 
                 <div className="flex flex-col overflow-hidden">
-                  <span className="truncate font-medium">{thread.name}</span>
+                  <span className="truncate font-medium">{thread.title}</span>
 
                   <span className="text-xs text-muted-foreground">
-                    {thread.createdAt}
+                    {formatCreatedAt(thread.created_at)}
                   </span>
                 </div>
               </div>
