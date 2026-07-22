@@ -2,6 +2,8 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { getThreadMessages } from "@/service/api/thread";
 import {
   applyStreamEvent,
@@ -27,6 +29,10 @@ const formatToolLabel = (tool: string) => {
 
   if (normalized.includes("sample")) {
     return "Getting sample values";
+  }
+
+  if (normalized.includes("explore")) {
+    return "Exploring Databases";
   }
 
   return tool;
@@ -60,30 +66,6 @@ type ChatMessage =
       error?: string;
     };
 
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
-const formatInlineMarkdown = (value: string) => {
-  let html = escapeHtml(value);
-
-  html = html.replace(
-    /`([^`]+)`/g,
-    (_, code) => `<code>${escapeHtml(code)}</code>`,
-  );
-  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-  html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-  html = html.replace(
-    /\[(.*?)\]\((.*?)\)/g,
-    '<a href="$2" target="_blank" rel="noreferrer">$1</a>',
-  );
-
-  return html.replace(/\n/g, "<br />");
-};
 const mapServerMessage = (message: {
   id: string;
   role: "user" | "assistant";
@@ -157,63 +139,11 @@ const ChatWindow = ({ threadId, threadData }: ChatWindowProps) => {
     }
   };
 
-  const renderMarkdown = (content?: string | null) => {
-    const source = content ?? "";
-    const blocks = source
-      .split(/\n{2,}/)
-      .map((block) => block.trim())
-      .filter(Boolean);
-
-    const html = blocks
-      .map((block) => {
-        if (block.startsWith("```")) {
-          const match = block.match(/^```(?:\w+)?\s*([\s\S]*?)```$/);
-          const code = match
-            ? match[1]
-            : block.replace(/^```[\w-]*\s*/, "").replace(/```$/, "");
-
-          return `<pre><code>${escapeHtml(code.trim())}</code></pre>`;
-        }
-
-        if (block.startsWith(">")) {
-          const quoteLines = block
-            .split("\n")
-            .map((line) => line.replace(/^>\s?/, "").trim())
-            .filter(Boolean);
-          const inner = quoteLines
-            .map((line) => `<p>${formatInlineMarkdown(line)}</p>`)
-            .join("");
-
-          return `<blockquote>${inner}</blockquote>`;
-        }
-
-        if (/^([-*]|\d+\.)\s/.test(block)) {
-          const listItems = block
-            .split("\n")
-            .map((line) => line.trim())
-            .filter(Boolean)
-            .map((line) => {
-              const match = line.match(/^((?:\d+\.)|[-*])\s+(.*)$/);
-              return match ? `<li>${formatInlineMarkdown(match[2])}</li>` : "";
-            })
-            .filter(Boolean)
-            .join("");
-
-          const tag = block.trim().startsWith("1.") ? "ol" : "ul";
-          return `<${tag}>${listItems}</${tag}>`;
-        }
-
-        return `<p>${formatInlineMarkdown(block)}</p>`;
-      })
-      .join("");
-
-    return (
-      <div
-        className="space-y-2 wrap-break-word text-sm leading-6 [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_code]:rounded [&_code]:bg-muted/80 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[11px] [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:m-0 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/80 [&_pre]:p-3 [&_pre]:text-[11px] [&_pre]:leading-5 [&_pre]:text-foreground [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-    );
-  };
+  const renderMarkdown = (content?: string | null) => (
+    <div className="space-y-2 wrap-break-word text-sm leading-6 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:text-sm [&_h3]:font-semibold [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_code]:rounded [&_code]:bg-muted/80 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[11px] [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:m-0 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/80 [&_pre]:p-3 [&_pre]:text-[11px] [&_pre]:leading-5 [&_pre]:text-foreground [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content ?? ""}</ReactMarkdown>
+    </div>
+  );
 
   const handleSend = useCallback(
     async (message: string) => {
@@ -358,7 +288,7 @@ const ChatWindow = ({ threadId, threadData }: ChatWindowProps) => {
                             {renderMarkdown(message.message)}
                           </div>
                         ) : (
-                          <div className="w-fit max-w-full rounded-2xl rounded-bl-md border border-border/70 bg-card/80 p-3 text-sm shadow-sm wrap-break-word">
+                          <div className="w-fit max-w-full rounded-2xl rounded-bl-md  p-3 text-sm shadow-sm wrap-break-word">
                             {message.kind === "stream" ? (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -398,7 +328,7 @@ const ChatWindow = ({ threadId, threadData }: ChatWindowProps) => {
                                   message.structuredOutput.query ||
                                   message.structuredOutput.assumptions
                                     ?.length) ? (
-                                  <div className="space-y-2 rounded-xl border border-border/60 bg-background/70 p-3">
+                                  <div className="space-y-2 rounded-xl p-3">
                                     <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                       Summarized Answer
                                     </p>
