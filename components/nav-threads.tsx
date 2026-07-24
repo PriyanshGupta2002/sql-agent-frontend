@@ -25,7 +25,7 @@ import {
   RiMoreLine,
   RiChat3Line,
 } from "@remixicon/react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 interface NavThreadsProps {
   threads: ThreadResponse[];
@@ -34,6 +34,7 @@ interface NavThreadsProps {
 export default function NavThreads({ threads }: NavThreadsProps) {
   const { isMobile } = useSidebar();
   const router = useRouter();
+  const threadId = useParams()?.id;
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
@@ -45,11 +46,18 @@ export default function NavThreads({ threads }: NavThreadsProps) {
             key={thread.id}
             onClick={() => router.push(`/thread/${thread.id}`)}
           >
-            <SidebarMenuButton>
+            <SidebarMenuButton
+              isActive={threadId === thread.id}
+              className="px-3 py-7 gap-2"
+            >
+              <RiChat3Line />
+              {thread.title.substring(0, 50)}
+            </SidebarMenuButton>
+            {/* <SidebarMenuButton>
               <div className="flex items-center gap-2">
                 <RiChat3Line />
 
-                <div className="flex flex-col overflow-hidden">
+                <div className="flex flex-col p-4">
                   <span className="truncate font-medium">{thread.title}</span>
 
                   <span className="text-xs text-muted-foreground">
@@ -57,7 +65,7 @@ export default function NavThreads({ threads }: NavThreadsProps) {
                   </span>
                 </div>
               </div>
-            </SidebarMenuButton>
+            </SidebarMenuButton> */}
 
             <DropdownMenu>
               <DropdownMenuTrigger
